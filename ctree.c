@@ -730,14 +730,14 @@ static int generic_bin_search(struct extent_buffer *eb, unsigned long p,
 	int mid;
 	int ret;
 	unsigned long offset;
-	struct btrfs_disk_key *tmp;
+	struct btrfs_disk_key tmp;
 
 	while(low < high) {
 		mid = (low + high) / 2;
 		offset = p + mid * item_size;
 
-		tmp = (struct btrfs_disk_key *)(eb->data + offset);
-		ret = btrfs_comp_keys(tmp, key);
+		memcpy(&tmp, eb->data + offset, sizeof(struct btrfs_disk_key));
+		ret = btrfs_comp_keys(&tmp, key);
 
 		if (ret < 0)
 			low = mid + 1;

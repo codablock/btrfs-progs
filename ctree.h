@@ -981,14 +981,17 @@ static inline u##bits btrfs_##name(struct extent_buffer *eb,		\
 {									\
 	unsigned long offset = (unsigned long)s;			\
 	type *p = (type *) (eb->data + offset);				\
-	return le##bits##_to_cpu(p->member);				\
+	u##bits tmp;							\
+	memcpy(&tmp, &(p->member), sizeof(tmp));			\
+	return le##bits##_to_cpu(tmp);					\
 }									\
 static inline void btrfs_set_##name(struct extent_buffer *eb,		\
 				    type *s, u##bits val)		\
 {									\
 	unsigned long offset = (unsigned long)s;			\
 	type *p = (type *) (eb->data + offset);				\
-	p->member = cpu_to_le##bits(val);				\
+	u##bits tmp = cpu_to_le##bits(val);				\
+	memcpy(&(p->member), &tmp, sizeof(tmp));			\
 }
 
 #define BTRFS_SETGET_STACK_FUNCS(name, type, member, bits)		\
