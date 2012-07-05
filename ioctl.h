@@ -273,12 +273,20 @@ struct btrfs_ioctl_logical_ino_args {
 	__u64				inodes;
 };
 
+/*
+ * As with struct timespec, this is in cpu endianess
+ */
+struct btrfs_ioctl_timespec {
+	__u64 sec;
+	__u32 nsec;
+};
+
 struct btrfs_ioctl_received_subvol_args {
 	char	uuid[BTRFS_UUID_SIZE];	/* in */
 	__u64	stransid;		/* in */
 	__u64	rtransid;		/* out */
-	struct timespec stime;		/* in */
-	struct timespec rtime;		/* out */
+	struct btrfs_ioctl_timespec stime; /* in */
+	struct btrfs_ioctl_timespec rtime; /* out */
 	__u64	reserved[16];
 };
 
