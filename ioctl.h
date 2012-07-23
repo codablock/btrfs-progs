@@ -273,9 +273,6 @@ struct btrfs_ioctl_logical_ino_args {
 	__u64				inodes;
 };
 
-/*
- * As with struct timespec, this is in cpu endianess
- */
 struct btrfs_ioctl_timespec {
 	__u64 sec;
 	__u32 nsec;
