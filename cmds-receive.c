@@ -409,11 +409,12 @@ static int process_link(const char *path, const char *lnk, void *user)
 	int ret;
 	struct btrfs_receive *r = user;
 	char *full_path = path_cat(r->full_subvol_path, path);
+	char *full_link_path = path_cat(r->full_subvol_path, lnk);
 
 	if (g_verbose >= 1)
 		fprintf(stderr, "link %s -> %s\n", path, lnk);
 
-	ret = link(lnk, full_path);
+	ret = link(full_link_path, full_path);
 	if (ret < 0) {
 		ret = -errno;
 		fprintf(stderr, "ERROR: link %s -> %s failed. %s\n", path,
@@ -421,6 +422,7 @@ static int process_link(const char *path, const char *lnk, void *user)
 	}
 
 	free(full_path);
+	free(full_link_path);
 	return ret;
 }
 
