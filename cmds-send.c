@@ -593,7 +593,6 @@ int cmd_send_start(int argc, char **argv)
 					"for %s\n", subvol);
 			goto out;
 		}
-		free(subvol);
 
 		if (!parent_root_id) {
 			ret = find_good_parent(&send, root_id, &parent_root_id);
@@ -619,6 +618,7 @@ int cmd_send_start(int argc, char **argv)
 		add_clone_source(&send, root_id);
 
 		parent_root_id = 0;
+		free(subvol);
 	}
 
 	ret = 0;
