@@ -200,8 +200,8 @@ int subvol_uuid_search_init(int mnt_fd, struct subvol_uuid_search *s)
 	sk->max_objectid = (u64)-1;
 	sk->max_offset = (u64)-1;
 	sk->max_transid = (u64)-1;
-	sk->min_type = BTRFS_ROOT_ITEM_KEY;
-	sk->max_type = BTRFS_ROOT_BACKREF_KEY;
+	sk->min_type = 0;
+	sk->max_type = (u32)-1;
 	sk->nr_items = 4096;
 
 	while(1) {
@@ -288,9 +288,11 @@ skip:
 			sk->min_type = sh->type;
 		}
 		sk->nr_items = 4096;
-		if (sk->min_offset < (u64)-1)
+		if (sk->min_offset < (u64)-1) {
 			sk->min_offset++;
-		else if (sk->min_objectid < (u64)-1) {
+		} else if (sk->min_type < (u8)-1) {
+			sk->min_type++;
+		} else if (sk->min_objectid < (u64)-1) {
 			sk->min_objectid++;
 			sk->min_offset = 0;
 			sk->min_type = 0;
