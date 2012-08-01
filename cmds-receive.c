@@ -562,29 +562,14 @@ static int process_clone(const char *path, u64 offset, u64 len,
 		if (memcmp(clone_uuid, r->cur_subvol->received_uuid,
 				BTRFS_FSID_SIZE) == 0) {
 			/* TODO check generation of extent */
-			subvol_path = strdup(r->cur_subvol->path);
+			subvol_path = r->cur_subvol->path;
 		} else {
 			ret = -ENOENT;
 			fprintf(stderr, "ERROR: did not find source subvol.\n");
 			goto out;
 		}
 	} else {
-		/*if (rs_args.ctransid > rs_args.rtransid) {
-			if (!r->force) {
-				ret = -EINVAL;
-				fprintf(stderr, "ERROR: subvolume %s was "
-						"modified after it was "
-						"received.\n",
-						r->subvol_parent_name);
-				goto out;
-			} else {
-				fprintf(stderr, "WARNING: subvolume %s was "
-						"modified after it was "
-						"received.\n",
-						r->subvol_parent_name);
-			}
-		}*/
-		subvol_path = strdup(si->path);
+		subvol_path = si->path;
 	}
 
 	full_clone_path = path_cat3(r->root_path, subvol_path, clone_path);
@@ -612,7 +597,6 @@ static int process_clone(const char *path, u64 offset, u64 len,
 out:
 	free(full_path);
 	free(full_clone_path);
-	free(subvol_path);
 	if (clone_fd != -1)
 		close(clone_fd);
 	return ret;
@@ -862,7 +846,7 @@ static int do_cmd_receive(int argc, char **argv)
 	tomnt = argv[optind];
 
 	if (fromfile) {
-		receive_fd = open(fromfile, O_RDONLY | O_NOATIME);
+		receive_fd = open(fromfile, O_RDONLY);
 		if (receive_fd < 0) {
 			fprintf(stderr, "ERROR: failed to open %s\n", fromfile);
 			return -errno;
@@ -880,7 +864,7 @@ static const char * const receive_cmd_group_usage[] = {
 };
 
 static const char * const cmd_receive_usage[] = {
-	"btrfs receive [-v] [-i <infile>] <mount>",
+	"btrfs receive [-v] [-f <infile>] <mount>",
 	"Receive subvolumes from stdin.",
 	"Receives one or more subvolumes that were previously ",
 	"sent with btrfs send. The received subvolumes are stored",

@@ -38,28 +38,25 @@ struct btrfs_send_stream {
 
 static int read_buf(struct btrfs_send_stream *s, void *buf, int len)
 {
-	int ret;
+	int err;
+	int num_read;
 	int pos = 0;
 
 	while (pos < len) {
-		ret = read(s->fd, (char*)buf + pos, len - pos);
-		if (ret < 0) {
-			ret = -errno;
+		num_read = read(s->fd, (char*)buf + pos, len - pos);
+		if (num_read < 0) {
+			err = -errno;
 			fprintf(stderr, "ERROR: read from stream failed. %s\n",
-					strerror(-ret));
-			goto out;
+					strerror(-err));
+			return err;
 		}
-		if (ret == 0) {
-			ret = 1;
-			goto out;
+		if (num_read == 0) {
+			return 1;
 		}
-		pos += ret;
+		pos += num_read;
 	}
 
-	ret = 0;
-
-out:
-	return ret;
+	return 0;
 }
 
 /*

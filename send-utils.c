@@ -222,7 +222,7 @@ int subvol_uuid_search_init(int mnt_fd, struct subvol_uuid_search *s)
 								  off);
 			off += sizeof(*sh);
 
-			if ((sh->objectid != 5 &&
+			if ((sh->objectid != BTRFS_FS_TREE_OBJECTID &&
 			    sh->objectid < BTRFS_FIRST_FREE_OBJECTID) ||
 			    sh->objectid == BTRFS_FREE_INO_OBJECTID)
 				goto skip;

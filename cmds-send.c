@@ -64,7 +64,7 @@ int find_mount_root(const char *path, char **mount_root)
 
 	struct btrfs_ioctl_fs_info_args args;
 
-	fd = open(path, O_RDONLY | O_NOATIME);
+	fd = open(path, O_RDONLY);
 	if (fd < 0) {
 		ret = -errno;
 		goto out;
@@ -99,7 +99,7 @@ int find_mount_root(const char *path, char **mount_root)
 		pos = tmp - cur;
 		cur[pos] = 0;
 
-		fd = open(cur, O_RDONLY | O_NOATIME);
+		fd = open(cur, O_RDONLY);
 		if (fd < 0) {
 			ret = -errno;
 			goto out;
@@ -186,9 +186,7 @@ static int find_good_parent(struct btrfs_send *s, u64 root_id, u64 *found)
 		parent2 = subvol_uuid_search(&s->sus, s->clone_sources[i], NULL,
 				0, NULL, subvol_search_by_root_id);
 
-		tmp = parent2->ctransid - parent->ctransid;
-		if (tmp < 0)
-			tmp *= -1;
+		tmp = llabs((__s64)parent2->ctransid - (__s64)parent->ctransid);
 		if (tmp < best_diff) {
 			best_parent = parent;
 			best_diff = tmp;
@@ -247,21 +245,21 @@ static void *dump_thread(void *arg_)
 	int ret;
 	struct btrfs_send *s = (struct btrfs_send*)arg_;
 	char buf[4096];
-	int readed;
+	int num_read;
 
 	while (1) {
-		readed = read(s->send_fd, buf, sizeof(buf));
-		if (readed < 0) {
+		num_read = read(s->send_fd, buf, sizeof(buf));
+		if (num_read < 0) {
 			ret = -errno;
 			fprintf(stderr, "ERROR: failed to read stream from "
 					"kernel. %s\n", strerror(-ret));
 			goto out;
 		}
-		if (!readed) {
+		if (!num_read) {
 			ret = 0;
 			goto out;
 		}
-		ret = write_buf(s->dump_fd, buf, readed);
+		ret = write_buf(s->dump_fd, buf, num_read);
 		if (ret < 0)
 			goto out;
 	}
@@ -283,7 +281,7 @@ static int do_send(struct btrfs_send *send, u64 root_id, u64 parent_root)
 	struct subvol_info *si;
 	void *t_err = NULL;
 	int subvol_fd = -1;
-	int pipefd[2];
+	int pipefd[2] = {-1};
 
 	si = subvol_uuid_search(&send->sus, root_id, NULL, 0, NULL,
 			subvol_search_by_root_id);
@@ -294,7 +292,7 @@ static int do_send(struct btrfs_send *send, u64 root_id, u64 parent_root)
 		goto out;
 	}
 
-	subvol_fd = openat(send->mnt_fd, si->path, O_RDONLY | O_NOATIME);
+	subvol_fd = openat(send->mnt_fd, si->path, O_RDONLY);
 	if (subvol_fd < 0) {
 		ret = -errno;
 		fprintf(stderr, "ERROR: open %s failed. %s\n", si->path,
@@ -341,7 +339,7 @@ static int do_send(struct btrfs_send *send, u64 root_id, u64 parent_root)
 		fprintf(stderr, "joining genl thread\n");
 
 	close(pipefd[1]);
-	pipefd[1] = 0;
+	pipefd[1] = -1;
 
 	ret = pthread_join(t_read, &t_err);
 	if (ret) {
@@ -364,9 +362,9 @@ static int do_send(struct btrfs_send *send, u64 root_id, u64 parent_root)
 out:
 	if (subvol_fd != -1)
 		close(subvol_fd);
-	if (pipefd[0])
+	if (pipefd[0] >= 0)
 		close(pipefd[0]);
-	if (pipefd[1])
+	if (pipefd[1] >= 0)
 		close(pipefd[1]);
 	return ret;
 }
@@ -391,7 +389,7 @@ static int init_root_path(struct btrfs_send *s, const char *subvol)
 		goto out;
 	}
 
-	s->mnt_fd = open(s->root_path, O_RDONLY | O_NOATIME);
+	s->mnt_fd = open(s->root_path, O_RDONLY);
 	if (s->mnt_fd < 0) {
 		ret = -errno;
 		fprintf(stderr, "ERROR: can't open '%s': %s\n", s->root_path,
@@ -417,7 +415,7 @@ static int is_subvol_ro(struct btrfs_send *s, char *subvol)
 	u64 flags;
 	int fd = -1;
 
-	fd = openat(s->mnt_fd, subvol, O_RDONLY | O_NOATIME);
+	fd = openat(s->mnt_fd, subvol, O_RDONLY);
 	if (fd < 0) {
 		ret = -errno;
 		fprintf(stderr, "ERROR: failed to open %s. %s\n",
@@ -642,7 +640,11 @@ static const char * const cmd_send_usage[] = {
 	"an incremental send, one or multiple '-i <clone_source>'",
 	"arguments have to be specified. A 'clone source' is",
 	"a subvolume that is known to exist on the receiving",
-	"side in exactly the same state as on the sending side.\n",
+	"side in exactly the same state as on the sending side.",
+	"These clone sources are used to determine if the sent",
+	"data is already present on the receiving side so that",
+	"it can skip sending the data and instead send a clone",
+	"instruction.\n",
 	"Normally, a good snapshot parent is searched automatically",
 	"in the list of 'clone sources'. To override this, use",
 	"'-p <parent>' to manually specify a snapshot parent.",
